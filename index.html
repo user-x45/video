@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全画面動画ループプレイヤー</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SortableJS for Drag and Drop -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .ghost-card {
+            opacity: 0.4;
+            background: #1e293b;
+            border: 2px dashed #6366f1;
+        }
+        /* Progress ring for press-and-hold exit */
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.1s linear;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        /* Hide mouse cursor during playback when inactive */
+        .hide-cursor {
+            cursor: none !important;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Main Management View -->
+    <div id="editorView" class="min-h-screen flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-slate-800">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                        <i data-lucide="play-square" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-white">動画全画面ループプレイヤー</h1>
+                        <p class="text-xs text-slate-400 mt-0.5">動画の順序を自由にドラッグして並べ替え、全画面で連続再生できます</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Action Controls -->
+            <div class="flex items-center gap-3">
+                <button id="clearAllBtn" class="hidden px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition flex items-center gap-2 border border-transparent hover:border-red-500/20">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    すべて削除
+                </button>
+                <button id="startPlayBtn" disabled class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/25 transition flex items-center gap-2">
+                    <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                    全画面ループ再生を開始
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 py-8 flex flex-col gap-8">
+
+            <!-- File Upload Dropzone -->
+            <div id="dropzone" class="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 bg-slate-900/50 hover:bg-slate-900/80 rounded-2xl p-8 sm:p-12 text-center transition cursor-pointer relative group">
+                <input type="file" id="fileInput" multiple accept="video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                <div class="flex flex-col items-center justify-center gap-4">
+                    <div class="p-4 bg-slate-800/80 text-indigo-400 rounded-full group-hover:scale-110 group-hover:bg-indigo-600/20 transition duration-300">
+                        <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <p class="text-base font-semibold text-slate-200">
+                            動画ファイルをドラッグ＆ドロップ、または <span class="text-indigo-400 underline decoration-indigo-500/30 underline-offset-4">ファイルを選択</span>
+                        </p>
+                        <p class="text-xs text-slate-500 mt-1.5">MP4, WebM, MOV, OGG 等の動画フォーマットに対応（複数選択可）</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options Settings -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-6">
+                    <label class="flex items-center gap-2.5 cursor-pointer text-sm text-slate-300 hover:text-white">
+                        <input type="checkbox" id="optMute" class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900">
+                        <span>消音（ミュート）で再生</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 cursor-pointer text-sm text-slate-300 hover:text-white">
+                        <input type="checkbox" id="optShowTitle" checked class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900">
+                        <span>再生開始時にタイトルを表示（3秒間）</span>
+                    </label>
+                </div>
+                <div class="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/50">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    <span>全画面中の終了方法：<b>画面を長押し (3秒間)</b> または <b>Escキー長押し</b></span>
+                </div>
+            </div>
+
+            <!-- Video Playlist List / Grid -->
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i data-lucide="list-video" class="w-4 h-4"></i>
+                        再生リスト (<span id="videoCount">0</span>)
+                    </h2>
+                    <span class="text-xs text-slate-500">ドラッグして再生順序を入れ替えることができます</span>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="py-16 text-center border border-slate-800/60 rounded-2xl bg-slate-900/20">
+                    <i data-lucide="film" class="w-12 h-12 text-slate-700 mx-auto mb-3"></i>
+                    <p class="text-sm text-slate-400 font-medium">リストに動画が追加されていません</p>
+                    <p class="text-xs text-slate-600 mt-1">上のエリアから動画を追加してください</p>
+                </div>
+
+                <!-- Sortable Items Container -->
+                <div id="videoList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <!-- Dynamic Video Cards inserted here -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Fullscreen Video Player View -->
+    <div id="playerView" class="fixed inset-0 bg-black z-50 hidden flex items-center justify-center select-none overflow-hidden">
+        <!-- Video Elements Container for cross-fading / seamless playback -->
+        <video id="activeVideo" class="w-full h-full object-contain" playsinline></video>
+        
+        <!-- Video Title Overlay Banner -->
+        <div id="titleBanner" class="absolute top-8 left-8 right-8 pointer-events-none transition-opacity duration-500 opacity-0">
+            <div class="inline-flex items-center gap-3 bg-slate-950/80 backdrop-blur-md text-white px-5 py-3 rounded-2xl border border-white/10 shadow-2xl max-w-xl">
+                <i data-lucide="play-circle" class="w-5 h-5 text-indigo-400 shrink-0"></i>
+                <span id="playingTitle" class="text-base font-semibold truncate">動画タイトル</span>
+            </div>
+        </div>
+
+        <!-- Press & Hold Exit Overlay Indicator -->
+        <div id="holdExitOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-200">
+            <div class="relative flex items-center justify-center">
+                <!-- SVG Progress Ring -->
+                <svg class="w-32 h-32">
+                    <circle class="text-slate-800" stroke-width="6" stroke="currentColor" fill="transparent" r="52" cx="64" cy="64"/>
+                    <circle id="progressRing" class="text-indigo-500 progress-ring-circle" stroke-width="6" stroke-dasharray="326.72" stroke-dashoffset="326.72" stroke-linecap="round" stroke="currentColor" fill="transparent" r="52" cx="64" cy="64"/>
+                </svg>
+                <div class="absolute flex flex-col items-center justify-center text-center">
+                    <i data-lucide="log-out" class="w-8 h-8 text-white mb-1"></i>
+                </div>
+            </div>
+            <p class="text-white text-base font-medium mt-4">長押しで全画面再生を終了</p>
+            <p class="text-xs text-slate-400 mt-1">画面を押し続けてください...</p>
+        </div>
+
+        <!-- Controls Hint Banner on hover/mouse move -->
+        <div id="controlsHint" class="absolute bottom-6 px-4 py-2 bg-slate-900/80 backdrop-blur-md rounded-full border border-white/10 text-xs text-slate-300 pointer-events-none opacity-0 transition-opacity duration-300">
+            画面長押し または Escキー長押しで終了
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let videoPlaylist = []; // Array of { id, file, title, thumbnail, duration }
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        let holdTimer = null;
+        let holdProgressInterval = null;
+        let holdStartTime = 0;
+        const HOLD_DURATION = 2000; // 2 seconds to hold for exit
+        let mouseMoveTimeout = null;
+
+        // DOM Elements
+        const editorView = document.getElementById('editorView');
+        const playerView = document.getElementById('playerView');
+        const activeVideo = document.getElementById('activeVideo');
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const videoListEl = document.getElementById('videoList');
+        const emptyState = document.getElementById('emptyState');
+        const startPlayBtn = document.getElementById('startPlayBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const videoCountEl = document.getElementById('videoCount');
+        const optMute = document.getElementById('optMute');
+        const optShowTitle = document.getElementById('optShowTitle');
+        const titleBanner = document.getElementById('titleBanner');
+        const playingTitle = document.getElementById('playingTitle');
+        const holdExitOverlay = document.getElementById('holdExitOverlay');
+        const progressRing = document.getElementById('progressRing');
+        const controlsHint = document.getElementById('controlsHint');
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Initialize Drag-and-Drop Sorting with SortableJS
+        const sortable = new Sortable(videoListEl, {
+            animation: 200,
+            ghostClass: 'ghost-card',
+            handle: '.drag-handle',
+            onEnd: function (evt) {
+                // Reorder playlist array based on new DOM order
+                const movedItem = videoPlaylist.splice(evt.oldIndex, 1)[0];
+                videoPlaylist.splice(evt.newIndex, 0, movedItem);
+            }
+        });
+
+        // Handle File Selection
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(Array.from(e.target.files));
+                fileInput.value = ''; // Reset input
+            }
+        });
+
+        // Drag and drop handlers for area
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-indigo-500', 'bg-slate-900');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-indigo-500', 'bg-slate-900');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-indigo-500', 'bg-slate-900');
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(Array.from(e.dataTransfer.files));
+            }
+        });
+
+        // Process uploaded video files
+        async function handleFiles(files) {
+            const videoFiles = files.filter(file => file.type.startsWith('video/'));
+            if (videoFiles.length === 0) return;
+
+            for (const file of videoFiles) {
+                const item = {
+                    id: 'vid_' + Math.random().toString(36).substring(2, 9),
+                    file: file,
+                    title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+                    thumbnail: null,
+                    url: URL.createObjectURL(file)
+                };
+
+                videoPlaylist.push(item);
+                renderVideoCard(item);
+
+                // Asynchronously generate thumbnail
+                generateThumbnail(item.url).then(thumbUrl => {
+                    item.thumbnail = thumbUrl;
+                    const thumbImg = document.getElementById(`thumb_${item.id}`);
+                    if (thumbImg && thumbUrl) {
+                        thumbImg.src = thumbUrl;
+                        thumbImg.classList.remove('opacity-0');
+                    }
+                });
+            }
+
+            updateUIState();
+        }
+
+        // Generate thumbnail using HTML5 Canvas
+        function generateThumbnail(videoUrl) {
+            return new Promise((resolve) => {
+                const tempVideo = document.createElement('video');
+                tempVideo.preload = 'metadata';
+                tempVideo.src = videoUrl;
+                tempVideo.muted = true;
+                tempVideo.currentTime = 1; // Seek to 1s mark
+
+                tempVideo.onloadeddata = () => {
+                    // Seek slightly if video is short
+                    if (tempVideo.duration < 1) tempVideo.currentTime = 0;
+                };
+
+                tempVideo.onseeked = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 320;
+                        canvas.height = 180;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        resolve(dataUrl);
+                    } catch (e) {
+                        resolve(null);
+                    }
+                };
+
+                tempVideo.onerror = () => resolve(null);
+            });
+        }
+
+        // Render single video card in management view
+        function renderVideoCard(item) {
+            const card = document.createElement('div');
+            card.id = item.id;
+            card.className = 'group relative bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col gap-3 hover:border-slate-700 transition duration-200';
+            
+            card.innerHTML = `
+                <!-- Thumbnail Container -->
+                <div class="relative w-full aspect-video bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800/80">
+                    <img id="thumb_${item.id}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" src="" alt="${item.title}">
+                    <div class="absolute inset-0 flex items-center justify-center bg-slate-950/40 opacity-0 group-hover:opacity-100 transition">
+                        <span class="drag-handle p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-slate-200 cursor-grab active:cursor-grabbing">
+                            <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Title and Controls -->
+                <div class="flex items-start justify-between gap-2 px-1">
+                    <div class="flex-1 min-w-0">
+                        <input type="text" value="${item.title}" class="card-title-input w-full bg-transparent text-sm font-semibold text-slate-200 hover:bg-slate-800/50 focus:bg-slate-800 px-1.5 py-1 rounded-lg border border-transparent focus:border-indigo-500/50 outline-none transition truncate" placeholder="タイトルを入力">
+                    </div>
+                    <button class="delete-btn p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition" title="削除">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+
+            // Event Listeners for Card
+            const titleInput = card.querySelector('.card-title-input');
+            titleInput.addEventListener('change', (e) => {
+                item.title = e.target.value;
+            });
+
+            const deleteBtn = card.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', () => {
+                removeVideo(item.id);
+            });
+
+            videoListEl.appendChild(card);
+            lucide.createIcons({ targets: [card] });
+        }
+
+        // Remove video from playlist
+        function removeVideo(id) {
+            const index = videoPlaylist.findIndex(v => v.id === id);
+            if (index !== -1) {
+                URL.revokeObjectURL(videoPlaylist[index].url);
+                videoPlaylist.splice(index, 1);
+                const card = document.getElementById(id);
+                if (card) card.remove();
+                updateUIState();
+            }
+        }
+
+        // Clear all videos
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm('すべての動画をリストから削除しますか？')) {
+                videoPlaylist.forEach(v => URL.revokeObjectURL(v.url));
+                videoPlaylist = [];
+                videoListEl.innerHTML = '';
+                updateUIState();
+            }
+        });
+
+        // Update counts and empty state
+        function updateUIState() {
+            videoCountEl.textContent = videoPlaylist.length;
+            if (videoPlaylist.length > 0) {
+                emptyState.classList.add('hidden');
+                startPlayBtn.disabled = false;
+                clearAllBtn.classList.remove('hidden');
+            } else {
+                emptyState.classList.remove('hidden');
+                startPlayBtn.disabled = true;
+                clearAllBtn.classList.add('hidden');
+            }
+        }
+
+        // Start Fullscreen Loop Playback
+        startPlayBtn.addEventListener('click', () => {
+            if (videoPlaylist.length === 0) return;
+            currentTrackIndex = 0;
+            startPlayback();
+        });
+
+        async function startPlayback() {
+            isPlaying = true;
+            playerView.classList.remove('hidden');
+            
+            // Apply Mute setting
+            activeVideo.muted = optMute.checked;
+
+            // Attempt browser Fullscreen API
+            try {
+                if (playerView.requestFullscreen) {
+                    await playerView.requestFullscreen();
+                } else if (playerView.webkitRequestFullscreen) {
+                    await playerView.webkitRequestFullscreen();
+                }
+            } catch (err) {
+                console.warn("Fullscreen request failed or was denied:", err);
+            }
+
+            // Lock Keyboard if supported (Chrome feature)
+            if (navigator.keyboard && navigator.keyboard.lock) {
+                try {
+                    await navigator.keyboard.lock(['Escape']);
+                } catch (e) {
+                    console.log("Keyboard lock not permitted:", e);
+                }
+            }
+
+            playCurrentTrack();
+        }
+
+        function playCurrentTrack() {
+            if (!isPlaying || videoPlaylist.length === 0) return;
+
+            const currentItem = videoPlaylist[currentTrackIndex];
+            activeVideo.src = currentItem.url;
+            activeVideo.play().catch(err => console.log("Playback interrupted:", err));
+
+            // Show title banner if enabled
+            if (optShowTitle.checked) {
+                playingTitle.textContent = currentItem.title;
+                titleBanner.classList.remove('opacity-0');
+                setTimeout(() => {
+                    titleBanner.classList.add('opacity-0');
+                }, 3000);
+            }
+        }
+
+        // Video ended -> Loop to next
+        activeVideo.addEventListener('ended', () => {
+            if (!isPlaying) return;
+            currentTrackIndex = (currentTrackIndex + 1) % videoPlaylist.length;
+            playCurrentTrack();
+        });
+
+        // Long Press / Hold to Exit Logic
+        const circumference = 2 * Math.PI * 52; // R=52
+
+        function startHold(e) {
+            if (!isPlaying) return;
+            
+            // Ignore right clicks
+            if (e.button && e.button !== 0) return;
+
+            holdStartTime = Date.now();
+            holdExitOverlay.classList.remove('opacity-0');
+
+            holdProgressInterval = setInterval(() => {
+                const elapsed = Date.now() - holdStartTime;
+                const progress = Math.min(elapsed / HOLD_DURATION, 1);
+                
+                // Update ring offset
+                const offset = circumference - (progress * circumference);
+                progressRing.style.strokeDashoffset = offset;
+
+                if (progress >= 1) {
+                    cancelHold();
+                    exitPlayback();
+                }
+            }, 30);
+        }
+
+        function cancelHold() {
+            if (holdProgressInterval) {
+                clearInterval(holdProgressInterval);
+                holdProgressInterval = null;
+            }
+            holdExitOverlay.classList.add('opacity-0');
+            progressRing.style.strokeDashoffset = circumference;
+        }
+
+        // Mouse/Touch events for hold to exit
+        playerView.addEventListener('mousedown', startHold);
+        playerView.addEventListener('mouseup', cancelHold);
+        playerView.addEventListener('mouseleave', cancelHold);
+
+        playerView.addEventListener('touchstart', (e) => {
+            startHold(e);
+        }, { passive: true });
+        
+        playerView.addEventListener('touchend', cancelHold);
+        playerView.addEventListener('touchcancel', cancelHold);
+
+        // Exit Playback & Restore Editor View
+        function exitPlayback() {
+            isPlaying = false;
+            activeVideo.pause();
+            activeVideo.src = '';
+            playerView.classList.add('hidden');
+
+            // Unlock keyboard
+            if (navigator.keyboard && navigator.keyboard.unlock) {
+                navigator.keyboard.unlock();
+            }
+
+            // Exit browser fullscreen
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        // Handle Escape Key & Global Keyboard Event Interception
+        window.addEventListener('keydown', (e) => {
+            if (!isPlaying) return;
+
+            // Block standard keyboard navigation during playback
+            if (e.key === 'Escape') {
+                // If Esc is held down, we allow exit after hold duration
+                if (!holdProgressInterval) {
+                    startHold({ button: 0 });
+                }
+            } else {
+                // Prevent general keyboard shortcuts from interrupting
+                e.preventDefault();
+            }
+        }, true);
+
+        window.addEventListener('keyup', (e) => {
+            if (!isPlaying) return;
+            if (e.key === 'Escape') {
+                cancelHold();
+            }
+        });
+
+        // Listen for standard Browser Fullscreen Change (e.g. user forced exit via browser controls)
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && isPlaying) {
+                exitPlayback();
+            }
+        });
+
+        // Show controls hint briefly on mouse move
+        playerView.addEventListener('mousemove', () => {
+            if (!isPlaying) return;
+            playerView.classList.remove('hide-cursor');
+            controlsHint.classList.remove('opacity-0');
+
+            clearTimeout(mouseMoveTimeout);
+            mouseMoveTimeout = setTimeout(() => {
+                if (isPlaying) {
+                    playerView.classList.add('hide-cursor');
+                    controlsHint.classList.add('opacity-0');
+                }
+            }, 2500);
+        });
+
+    </script>
+</body>
+</html>
