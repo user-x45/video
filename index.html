@@ -420,37 +420,34 @@ function loadScript(src){
   });
 }
 
+const FF_LIB='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
+const FF_CORE='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+
+async function toBlobURL(url,type){
+  const res=await fetch(url);
+  if(!res.ok)throw new Error('ダウンロードに失敗しました（'+res.status+'）: '+url);
+  return URL.createObjectURL(new Blob([await res.arrayBuffer()],{type}));
+}
+
 async function getFF(){
   if(ff)return ff;
   setProgress(0,'互換モードの準備中…（初回のみ約30MB）');
-  await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
-  await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js');
-  const{toBlobURL}=FFmpegUtil;
-  const jsd='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
-  const unp='https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-  const workerSrc='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js';
-  const attempts=[
-    async()=>({classWorkerURL:await toBlobURL(workerSrc,'text/javascript'),coreURL:await toBlobURL(jsd+'/ffmpeg-core.js','text/javascript'),wasmURL:await toBlobURL(jsd+'/ffmpeg-core.wasm','application/wasm')}),
-    async()=>({classWorkerURL:await toBlobURL(workerSrc,'text/javascript'),coreURL:jsd+'/ffmpeg-core.js',wasmURL:jsd+'/ffmpeg-core.wasm'}),
-    async()=>({classWorkerURL:await toBlobURL(workerSrc,'text/javascript'),coreURL:unp+'/ffmpeg-core.js',wasmURL:unp+'/ffmpeg-core.wasm'}),
-    async()=>({coreURL:jsd+'/ffmpeg-core.js',wasmURL:jsd+'/ffmpeg-core.wasm'})
-  ];
-  let lastErr=null;
-  for(let i=0;i<attempts.length;i++){
-    const inst=new FFmpegWASM.FFmpeg();
-    try{
-      setProgress(0,'互換モードの準備中…（'+(i+1)+' / '+attempts.length+'）');
-      await inst.load(await attempts[i]());
-      inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
-      ff=inst;
-      return ff;
-    }catch(e){
-      console.warn('ffmpeg load attempt '+(i+1)+' failed',e);
-      lastErr=e;
-      try{inst.terminate()}catch(_){}
-    }
+  let inst=null;
+  try{
+    const{FFmpeg}=await import(FF_LIB+'/index.js');
+    inst=new FFmpeg();
+    inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
+    const classWorkerURL=URL.createObjectURL(new Blob(['import "'+FF_LIB+'/worker.js";'],{type:'text/javascript'}));
+    const coreURL=await toBlobURL(FF_CORE+'/ffmpeg-core.js','text/javascript');
+    const wasmURL=await toBlobURL(FF_CORE+'/ffmpeg-core.wasm','application/wasm');
+    await inst.load({classWorkerURL,coreURL,wasmURL});
+    ff=inst;
+    return ff;
+  }catch(e){
+    console.error(e);
+    try{if(inst)inst.terminate()}catch(_){}
+    throw new Error('互換モードのエンジンを読み込めませんでした。https またはlocalhostで開いているか、cdn.jsdelivr.net への接続がブロックされていないか確認してください。\n詳細: '+(e&&e.message?e.message:e));
   }
-  throw new Error('互換モードのエンジンを読み込めませんでした。https またはlocalhostで開いているか、ネットワークやセキュリティ設定（CSP）でCDNがブロックされていないか確認してください。\n詳細: '+(lastErr&&lastErr.message?lastErr.message:lastErr));
 }
 
 function readOpts(){
@@ -522,7 +519,7 @@ async function viaFFmpeg(f,o){
   window.__log='';
   try{
     setProgress(0,'ファイルを読み込んでいます…');
-    await inst.writeFile(inName,await FFmpegUtil.fetchFile(file));
+    await inst.writeFile(inName,new Uint8Array(await file.arrayBuffer()));
     let done=false;
     if(f.copy&&!o.h&&!o.br&&!o.force&&f.g==='v'){
       setProgress(0,'中身を変えずに変換できるか確認しています…');
