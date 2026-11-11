@@ -425,17 +425,32 @@ async function getFF(){
   setProgress(0,'互換モードの準備中…（初回のみ約30MB）');
   await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
   await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js');
-  const inst=new FFmpegWASM.FFmpeg();
-  const base='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
   const{toBlobURL}=FFmpegUtil;
-  await inst.load({
-    classWorkerURL:await toBlobURL('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js','text/javascript'),
-    coreURL:await toBlobURL(base+'/ffmpeg-core.js','text/javascript'),
-    wasmURL:await toBlobURL(base+'/ffmpeg-core.wasm','application/wasm')
-  });
-  inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
-  ff=inst;
-  return ff;
+  const jsd='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+  const unp='https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+  const workerSrc='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js';
+  const attempts=[
+    async()=>({classWorkerURL:await toBlobURL(workerSrc,'text/javascript'),coreURL:await toBlobURL(jsd+'/ffmpeg-core.js','text/javascript'),wasmURL:await toBlobURL(jsd+'/ffmpeg-core.wasm','application/wasm')}),
+    async()=>({classWorkerURL:await toBlobURL(workerSrc,'text/javascript'),coreURL:jsd+'/ffmpeg-core.js',wasmURL:jsd+'/ffmpeg-core.wasm'}),
+    async()=>({classWorkerURL:await toBlobURL(workerSrc,'text/javascript'),coreURL:unp+'/ffmpeg-core.js',wasmURL:unp+'/ffmpeg-core.wasm'}),
+    async()=>({coreURL:jsd+'/ffmpeg-core.js',wasmURL:jsd+'/ffmpeg-core.wasm'})
+  ];
+  let lastErr=null;
+  for(let i=0;i<attempts.length;i++){
+    const inst=new FFmpegWASM.FFmpeg();
+    try{
+      setProgress(0,'互換モードの準備中…（'+(i+1)+' / '+attempts.length+'）');
+      await inst.load(await attempts[i]());
+      inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
+      ff=inst;
+      return ff;
+    }catch(e){
+      console.warn('ffmpeg load attempt '+(i+1)+' failed',e);
+      lastErr=e;
+      try{inst.terminate()}catch(_){}
+    }
+  }
+  throw new Error('互換モードのエンジンを読み込めませんでした。https またはlocalhostで開いているか、ネットワークやセキュリティ設定（CSP）でCDNがブロックされていないか確認してください。\n詳細: '+(lastErr&&lastErr.message?lastErr.message:lastErr));
 }
 
 function readOpts(){
