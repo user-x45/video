@@ -2,10 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<script src="coi-serviceworker.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>かんたん動画コンバーター</title>
-<link rel="stylesheet" crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
 :root{
   --bg:#f3f4fb;--card:rgba(255,255,255,.86);--solid:#fff;--tx:#191b2a;--sub:#6a6f88;--bd:#e4e6f2;
@@ -90,7 +89,6 @@ h1{font-size:1.7rem;margin:0 0 6px;letter-spacing:.01em}
 .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .25s}
 .bar.busy i{background-size:200% 100%;animation:sh 1.2s linear infinite;background-image:linear-gradient(90deg,var(--ac),var(--ac2),var(--ac))}
 @keyframes sh{to{background-position:-200% 0}}
-#engine.mt{color:var(--ok);font-weight:700}
 #warn{font-size:.82rem;color:var(--warn);margin-top:10px;white-space:pre-wrap}
 #err{font-size:.86rem;color:var(--err);margin-top:10px;white-space:pre-wrap}
 .done{display:flex;align-items:center;gap:10px;margin-bottom:6px}
@@ -119,7 +117,7 @@ details p{margin:8px 0 0;color:var(--sub);font-size:.84rem}
   <div class="logo"><i class="fa-solid fa-film"></i></div>
   <h1>かんたん動画コンバーター</h1>
   <p>動画・音声・GIFを、好きな形式に変換できます。</p>
-  <div class="badges"><span><i class="fa-solid fa-lock"></i> ファイルは送信されません</span><span><i class="fa-solid fa-circle-check"></i> 無料</span><span><i class="fa-solid fa-mobile-screen"></i> スマホ対応</span><span id="mtBadge" hidden><i class="fa-solid fa-microchip"></i> マルチスレッド有効</span></div>
+  <div class="badges"><span><i class="fa-solid fa-lock"></i> ファイルは送信されません</span><span><i class="fa-solid fa-circle-check"></i> 無料</span><span><i class="fa-solid fa-mobile-screen"></i> スマホ対応</span></div>
 </header>
 
 <section class="card" id="s1">
@@ -221,10 +219,10 @@ details p{margin:8px 0 0;color:var(--sub);font-size:.84rem}
   <details><summary>動画はインターネットに送られますか？</summary><p>いいえ。変換はすべてお使いの端末の中で行われ、動画が外部のサーバーに送られることはありません。</p></details>
   <details><summary>どの形式を選べばいいですか？</summary><p>動画なら「MP4」、音声なら「MP3」か「M4A」がおすすめです。ほとんどの機器やアプリで再生できます。</p></details>
   <details><summary>変換に時間がかかります</summary><p>中身を変えずに入れ物だけ変える場合は、数秒で終わります。画質やサイズを変える場合は、動画の長さと端末の性能に応じて時間がかかります。変換中は、このページを開いたままにしてください。</p></details>
-  <details><summary>「互換モード」とは何ですか？</summary><p>ブラウザの標準機能で変換できないときに、別のエンジン（ffmpeg）を使う方式です。初回だけ約30MBの読み込みが必要です。お使いの環境で使える場合は、複数のCPUコアで並列に処理します。</p></details>
+  <details><summary>「互換モード」とは何ですか？</summary><p>ブラウザの標準機能で変換できないときに、別のエンジンを使う方式です。初回だけ約30MBの読み込みが必要で、高速モードより時間がかかります。</p></details>
   <details><summary>プレビューが再生できません</summary><p>ブラウザが対応していない形式は、プレビューできないことがあります。ダウンロードしたファイルは、対応するプレイヤー（VLCなど）で再生できます。</p></details>
 </section>
-<p class="foot">ブラウザの機能（WebCodecs）と ffmpeg.wasm（マルチスレッド対応）を使って、端末内で変換しています。</p>
+<p class="foot">ブラウザの機能（WebCodecs）と ffmpeg.wasm を使って、端末内で変換しています。</p>
 </main>
 
 <script type="module">
@@ -416,19 +414,14 @@ renderSettings();
 function loadScript(src){
   return new Promise((ok,ng)=>{
     const s=document.createElement('script');
-    s.src=src;s.crossOrigin='anonymous';s.onload=ok;
+    s.src=src;s.onload=ok;
     s.onerror=()=>ng(new Error('必要なファイルを読み込めませんでした。ネットワーク接続を確認してください。'));
     document.head.appendChild(s);
   });
 }
 
 const FF_LIB='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
-const FF_CORE_ST='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
-const FF_CORE_MT='https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm';
-const THREADS=Math.max(2,Math.min(8,navigator.hardwareConcurrency||4));
-let ffMode='st',ffCopied=false;
-if(window.crossOriginIsolated&&typeof SharedArrayBuffer!=='undefined')$('mtBadge').hidden=false;
-const addWarn=t=>{$('warn').textContent+=($('warn').textContent?'\n':'')+t};
+const FF_CORE='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
 
 async function toBlobURL(url,type){
   const res=await fetch(url);
@@ -436,46 +429,23 @@ async function toBlobURL(url,type){
   return URL.createObjectURL(new Blob([await res.arrayBuffer()],{type}));
 }
 
-async function loadFF(core,mt){
-  const{FFmpeg}=await import(FF_LIB+'/index.js');
-  const inst=new FFmpeg();
-  inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
-  try{
-    const classWorkerURL=URL.createObjectURL(new Blob(['import "'+FF_LIB+'/worker.js";'],{type:'text/javascript'}));
-    const coreURL=await toBlobURL(core+'/ffmpeg-core.js','text/javascript');
-    const wasmURL=await toBlobURL(core+'/ffmpeg-core.wasm','application/wasm');
-    const cfg={classWorkerURL,coreURL,wasmURL};
-    if(mt)cfg.workerURL=await toBlobURL(core+'/ffmpeg-core.worker.js','text/javascript');
-    await inst.load(cfg);
-    return inst;
-  }catch(e){
-    try{inst.terminate()}catch(_){}
-    throw e;
-  }
-}
-
 async function getFF(){
   if(ff)return ff;
-  const canMT=!!window.crossOriginIsolated&&typeof SharedArrayBuffer!=='undefined';
-  setProgress(0,canMT?'マルチスレッドエンジンの準備中…（初回のみ約30MB）':'互換モードの準備中…（初回のみ約30MB）');
-  if(canMT){
-    try{
-      ff=await loadFF(FF_CORE_MT,true);
-      ffMode='mt';
-      return ff;
-    }catch(e){
-      console.warn(e);
-      addWarn('マルチスレッド版を読み込めなかったため、シングルスレッドで変換します。');
-    }
-  }else{
-    addWarn('この環境ではマルチスレッドを使えないため、シングルスレッドで変換します。');
-  }
+  setProgress(0,'互換モードの準備中…（初回のみ約30MB）');
+  let inst=null;
   try{
-    ff=await loadFF(FF_CORE_ST,false);
-    ffMode='st';
+    const{FFmpeg}=await import(FF_LIB+'/index.js');
+    inst=new FFmpeg();
+    inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
+    const classWorkerURL=URL.createObjectURL(new Blob(['import "'+FF_LIB+'/worker.js";'],{type:'text/javascript'}));
+    const coreURL=await toBlobURL(FF_CORE+'/ffmpeg-core.js','text/javascript');
+    const wasmURL=await toBlobURL(FF_CORE+'/ffmpeg-core.wasm','application/wasm');
+    await inst.load({classWorkerURL,coreURL,wasmURL});
+    ff=inst;
     return ff;
   }catch(e){
     console.error(e);
+    try{if(inst)inst.terminate()}catch(_){}
     throw new Error('互換モードのエンジンを読み込めませんでした。https またはlocalhostで開いているか、cdn.jsdelivr.net への接続がブロックされていないか確認してください。\n詳細: '+(e&&e.message?e.message:e));
   }
 }
@@ -544,18 +514,17 @@ async function viaFFmpeg(f,o){
   const inst=await getFF();
   const ext=extOf(file.name)||'bin';
   const inName='input.'+ext,outName='output.'+f.e;
-  const onProg=({progress})=>setProgress(progress,ffMode==='mt'?'マルチスレッド（'+THREADS+'スレッド）で変換しています…':'互換モード（シングルスレッド）で変換しています…');
+  const onProg=({progress})=>setProgress(progress,'互換モードで変換しています…');
   inst.on('progress',onProg);
   window.__log='';
   try{
     setProgress(0,'ファイルを読み込んでいます…');
     await inst.writeFile(inName,new Uint8Array(await file.arrayBuffer()));
     let done=false;
-    ffCopied=false;
     if(f.copy&&!o.h&&!o.br&&!o.force&&f.g==='v'){
       setProgress(0,'中身を変えずに変換できるか確認しています…');
       const code=await inst.exec(['-i',inName,'-c','copy',outName]);
-      if(code===0){done=true;ffCopied=true}
+      if(code===0)done=true;
       else try{await inst.deleteFile(outName)}catch(e){}
     }
     if(!done){
@@ -565,7 +534,6 @@ async function viaFFmpeg(f,o){
         const sc=o.gw?`scale=${o.gw}:-2`:'scale=iw:-2';
         args.push('-vf',`fps=${o.gf},${sc}:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse`,'-loop',o.gl?'0':'-1');
       }else args.push(...f.ff(o.ab));
-      if(ffMode==='mt')args.push('-threads',String(THREADS));
       args.push(outName);
       const code=await inst.exec(args);
       if(code!==0)throw new Error('変換に失敗しました。ファイルが壊れているか、この組み合わせに対応していない可能性があります。\n'+(window.__log||'').split('\n').slice(-3).join('\n'));
@@ -586,24 +554,15 @@ async function convert(){
     try{
       setProgress(0,'変換しています…');
       const blob=f.g==='g'?await gifViaMediabunny(o):await viaMediabunny(f,o);
-      return{blob,engine:'<i class="fa-solid fa-bolt"></i> 高速モード（ブラウザ標準機能）で変換しました',mt:false};
+      return{blob,engine:'<i class="fa-solid fa-bolt"></i> 高速モード（ブラウザ標準機能）で変換しました'};
     }catch(err){
       console.warn(err);
-      addWarn('高速モードで変換できなかったため、互換モードに切り替えました。');
+      $('warn').textContent='高速モードで変換できなかったため、互換モードに切り替えました。';
       setProgress(0,'互換モードに切り替えています…');
     }
   }
   const blob=await viaFFmpeg(f,o);
-  let engine,mt=false;
-  if(ffMode==='mt'&&!ffCopied){
-    mt=true;
-    engine='<i class="fa-solid fa-microchip"></i> マルチスレッド（'+THREADS+'スレッド）で変換しました';
-  }else if(ffMode==='mt'){
-    engine='<i class="fa-solid fa-gears"></i> 互換モード（ffmpeg）で変換しました（中身をそのまま移したため、並列処理は使っていません）';
-  }else{
-    engine='<i class="fa-solid fa-gears"></i> 互換モード（ffmpeg・シングルスレッド）で変換しました';
-  }
-  return{blob,engine,mt};
+  return{blob,engine:'<i class="fa-solid fa-gears"></i> 互換モード（ffmpeg）で変換しました'};
 }
 
 function showPreview(f){
@@ -655,7 +614,7 @@ $('go').onclick=async()=>{
   const f=fmt();
   const t0=performance.now();
   try{
-    const{blob,engine,mt}=await convert();
+    const{blob,engine}=await convert();
     if(outUrl)URL.revokeObjectURL(outUrl);
     outUrl=URL.createObjectURL(blob);
     $('dl').href=outUrl;
@@ -664,7 +623,6 @@ $('go').onclick=async()=>{
     $('sumAfter').textContent=mb(blob.size);
     $('sumTime').textContent=((performance.now()-t0)/1000).toFixed(1)+' 秒';
     $('engine').innerHTML=engine;
-    $('engine').classList.toggle('mt',!!mt);
     showPreview(f);
     setProgress(1,'完了');
     $('out').hidden=false;
