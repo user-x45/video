@@ -225,27 +225,28 @@ details p{margin:8px 0 0;color:var(--sub);font-size:.84rem}
 <p class="foot">ブラウザの機能（WebCodecs）と ffmpeg.wasm を使って、端末内で変換しています。</p>
 </main>
 
+<script type="importmap">{"imports":{"mediabunny":"https://cdn.jsdelivr.net/npm/mediabunny@1.62.1/dist/bundles/mediabunny.mjs"}}</script>
 <script type="module">
-import*as M from 'https://cdn.jsdelivr.net/npm/mediabunny@1/+esm';
+import*as M from 'mediabunny';
 import{GIFEncoder,quantize,applyPalette}from 'https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm';
 
 const $=id=>document.getElementById(id);
 const MB_INPUT=new Set(['mp4','m4v','m4a','mov','mkv','mka','webm','ogg','ogv','oga','opus','mp3','wav','flac','aac','ts','mts','m2ts']);
-const X264=['-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p'];
+const X264=['-c:v','libx264','-preset','ultrafast','-tune','zerolatency','-pix_fmt','yuv420p'];
 
 const FORMATS=[
- {n:'MP4',ic:'fa-solid fa-film',d:'ほとんどの機器やSNSで再生できる定番',g:'v',rec:1,e:'mp4',m:'video/mp4',copy:1,mb:()=>({f:new M.Mp4OutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k','-movflags','+faststart']},
- {n:'MOV',ic:'fa-brands fa-apple',d:'iPhoneやMacでよく使われる形式',g:'v',e:'mov',m:'video/quicktime',copy:1,mb:()=>({f:new M.MovOutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
- {n:'MKV',ic:'fa-solid fa-box-archive',d:'複数の音声や字幕を入れやすい形式',g:'v',e:'mkv',m:'video/x-matroska',copy:1,mb:()=>({f:new M.MkvOutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
- {n:'WebM',ic:'fa-solid fa-globe',d:'Webサイト向けの軽い形式',g:'v',e:'webm',m:'video/webm',mb:()=>({f:new M.WebMOutputFormat(),vc:'vp9',ac:'opus'}),ff:c=>['-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','0','-crf',String(+c+4),'-c:a','libvorbis']},
+ {n:'MP4',ic:'fa-solid fa-film',d:'ほとんどの機器やSNSで再生できる定番',g:'v',rec:1,e:'mp4',m:'video/mp4',copy:1,mb:()=>({f:new M.Mp4OutputFormat(),vc:['avc'],ac:['aac']}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k','-movflags','+faststart']},
+ {n:'MOV',ic:'fa-brands fa-apple',d:'iPhoneやMacでよく使われる形式',g:'v',e:'mov',m:'video/quicktime',copy:1,mb:()=>({f:new M.MovOutputFormat(),vc:['avc'],ac:['aac']}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
+ {n:'MKV',ic:'fa-solid fa-box-archive',d:'複数の音声や字幕を入れやすい形式',g:'v',e:'mkv',m:'video/x-matroska',copy:1,mb:()=>({f:new M.MkvOutputFormat(),vc:['avc'],ac:['aac','opus']}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
+ {n:'WebM',ic:'fa-solid fa-globe',d:'Webサイト向けの軽い形式',g:'v',e:'webm',m:'video/webm',mb:()=>({f:new M.WebMOutputFormat(),vc:['vp9','vp8','av1'],ac:['opus']}),ff:c=>['-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','0','-crf',String(+c+4),'-c:a','libvorbis']},
  {n:'AVI',ic:'fa-solid fa-video',d:'古いソフトやパソコン向けの形式',g:'v',slow:1,e:'avi',m:'video/x-msvideo',ff:()=>['-c:v','mpeg4','-q:v','4','-c:a','libmp3lame','-b:a','128k']},
  {n:'FLV',ic:'fa-solid fa-tv',d:'昔のFlash系サービスで使われた形式',g:'v',slow:1,e:'flv',m:'video/x-flv',ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
- {n:'MP3',ic:'fa-solid fa-music',d:'どこでも再生できる音声の定番',g:'a',rec:1,slow:1,e:'mp3',m:'audio/mpeg',ff:b=>['-vn','-c:a','libmp3lame','-b:a',b]},
- {n:'M4A',ic:'fa-solid fa-headphones',d:'iPhoneなどで使いやすい音声',g:'a',e:'m4a',m:'audio/mp4',mb:()=>({f:new M.Mp4OutputFormat(),ac:'aac'}),ff:b=>['-vn','-c:a','aac','-b:a',b]},
- {n:'WAV',ic:'fa-solid fa-microphone-lines',d:'無圧縮で高音質（ファイルは大きめ）',g:'a',lossless:1,e:'wav',m:'audio/wav',mb:()=>({f:new M.WavOutputFormat(),ac:'pcm-s16'}),ff:()=>['-vn','-c:a','pcm_s16le']},
- {n:'Opus',ic:'fa-solid fa-wave-square',d:'小さくて高音質な音声',g:'a',e:'opus',m:'audio/ogg',mb:()=>({f:new M.OggOutputFormat(),ac:'opus'}),ff:b=>['-vn','-c:a','libopus','-b:a',b]},
- {n:'OGG',ic:'fa-solid fa-volume-high',d:'オープンな音声形式',g:'a',slow:1,e:'ogg',m:'audio/ogg',ff:b=>['-vn','-c:a','libvorbis','-b:a',b]},
- {n:'FLAC',ic:'fa-solid fa-compact-disc',d:'音質を落とさず圧縮できる形式',g:'a',slow:1,lossless:1,e:'flac',m:'audio/flac',ff:()=>['-vn','-c:a','flac']},
+ {n:'MP3',ic:'fa-solid fa-music',d:'どこでも再生できる音声の定番',g:'a',rec:1,e:'mp3',m:'audio/mpeg',enc:'mp3',mb:()=>({f:new M.Mp3OutputFormat(),ac:['mp3']}),ff:b=>['-vn','-c:a','libmp3lame','-b:a',b]},
+ {n:'M4A',ic:'fa-solid fa-headphones',d:'iPhoneなどで使いやすい音声',g:'a',e:'m4a',m:'audio/mp4',mb:()=>({f:new M.Mp4OutputFormat(),ac:['aac']}),ff:b=>['-vn','-c:a','aac','-b:a',b]},
+ {n:'WAV',ic:'fa-solid fa-microphone-lines',d:'無圧縮で高音質（ファイルは大きめ）',g:'a',lossless:1,e:'wav',m:'audio/wav',mb:()=>({f:new M.WavOutputFormat(),ac:['pcm-s16']}),ff:()=>['-vn','-c:a','pcm_s16le']},
+ {n:'Opus',ic:'fa-solid fa-wave-square',d:'小さくて高音質な音声',g:'a',e:'opus',m:'audio/ogg',mb:()=>({f:new M.OggOutputFormat(),ac:['opus']}),ff:b=>['-vn','-c:a','libopus','-b:a',b]},
+ {n:'OGG',ic:'fa-solid fa-volume-high',d:'オープンな音声形式',g:'a',e:'ogg',m:'audio/ogg',mb:()=>({f:new M.OggOutputFormat(),ac:['opus']}),ff:b=>['-vn','-c:a','libvorbis','-b:a',b]},
+ {n:'FLAC',ic:'fa-solid fa-compact-disc',d:'音質を落とさず圧縮できる形式',g:'a',lossless:1,e:'flac',m:'audio/flac',enc:'flac',mb:()=>({f:new M.FlacOutputFormat(),ac:['flac']}),ff:()=>['-vn','-c:a','flac']},
  {n:'GIF',ic:'fa-solid fa-image',d:'短い動きをチャットやSNSで共有',g:'g',rec:1,e:'gif',m:'image/gif',ff:()=>[]}
 ];
 const TABS=[['v','fa-solid fa-film','動画'],['a','fa-solid fa-headphones','音声'],['g','fa-solid fa-image','GIF']];
@@ -257,7 +258,7 @@ const PRESETS=[
 ];
 
 const S={tab:'v',fi:0,preset:'keep',res:0,force:false,gw:480,gf:12,gl:true,ab:'192k'};
-let file=null,busy=false,outUrl=null,ff=null,flvPlayer=null;
+let file=null,busy=false,outUrl=null,ff=null,ffPromise=null,flvPlayer=null;
 
 function dropdown(root,items,value,onChange){
   root.classList.add('dd');
@@ -352,6 +353,14 @@ function renderSettings(){
     $('abSeg').style.opacity=fmt().lossless?'.4':'1';
     $('abSeg').style.pointerEvents=fmt().lossless?'none':'auto';
   }
+  preloadFF();
+}
+
+function preloadFF(){
+  if(!file||ff||ffPromise)return;
+  const f=fmt();
+  if(MB_INPUT.has(extOf(file.name))&&(f.mb||f.g==='g'))return;
+  getFF(true).catch(()=>{});
 }
 
 function setProgress(p,t){
@@ -383,6 +392,7 @@ function pick(f){
   $('prog').hidden=true;
   setBusy(false);
   $('s2').scrollIntoView({behavior:'smooth',block:'start'});
+  preloadFF();
 }
 
 $('drop').onclick=()=>$('file').click();
@@ -429,25 +439,33 @@ async function toBlobURL(url,type){
   return URL.createObjectURL(new Blob([await res.arrayBuffer()],{type}));
 }
 
-async function getFF(){
-  if(ff)return ff;
-  setProgress(0,'互換モードの準備中…（初回のみ約30MB）');
-  let inst=null;
-  try{
-    const{FFmpeg}=await import(FF_LIB+'/index.js');
-    inst=new FFmpeg();
-    inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
-    const classWorkerURL=URL.createObjectURL(new Blob(['import "'+FF_LIB+'/worker.js";'],{type:'text/javascript'}));
-    const coreURL=await toBlobURL(FF_CORE+'/ffmpeg-core.js','text/javascript');
-    const wasmURL=await toBlobURL(FF_CORE+'/ffmpeg-core.wasm','application/wasm');
-    await inst.load({classWorkerURL,coreURL,wasmURL});
-    ff=inst;
-    return ff;
-  }catch(e){
-    console.error(e);
-    try{if(inst)inst.terminate()}catch(_){}
-    throw new Error('互換モードのエンジンを読み込めませんでした。https またはlocalhostで開いているか、cdn.jsdelivr.net への接続がブロックされていないか確認してください。\n詳細: '+(e&&e.message?e.message:e));
+function getFF(quiet){
+  if(ff)return Promise.resolve(ff);
+  if(!quiet)setProgress(0,'互換モードの準備中…（初回のみ約30MB）');
+  if(!ffPromise){
+    ffPromise=(async()=>{
+      let inst=null;
+      try{
+        const[{FFmpeg},coreURL,wasmURL]=await Promise.all([
+          import(FF_LIB+'/index.js'),
+          toBlobURL(FF_CORE+'/ffmpeg-core.js','text/javascript'),
+          toBlobURL(FF_CORE+'/ffmpeg-core.wasm','application/wasm')
+        ]);
+        inst=new FFmpeg();
+        inst.on('log',({message})=>{window.__log=(window.__log||'')+message+'\n'});
+        const classWorkerURL=URL.createObjectURL(new Blob(['import "'+FF_LIB+'/worker.js";'],{type:'text/javascript'}));
+        await inst.load({classWorkerURL,coreURL,wasmURL});
+        ff=inst;
+        return ff;
+      }catch(e){
+        console.error(e);
+        ffPromise=null;
+        try{if(inst)inst.terminate()}catch(_){}
+        throw new Error('互換モードのエンジンを読み込めませんでした。https またはlocalhostで開いているか、cdn.jsdelivr.net への接続がブロックされていないか確認してください。\n詳細: '+(e&&e.message?e.message:e));
+      }
+    })();
   }
+  return ffPromise;
 }
 
 function readOpts(){
@@ -455,30 +473,56 @@ function readOpts(){
   return{h:S.res,br,crf,force:S.force,ab:S.ab,gw:S.gw,gf:S.gf,gl:S.gl};
 }
 
+const ENC_URL={
+  mp3:'https://cdn.jsdelivr.net/npm/@mediabunny/mp3-encoder@1.62.1/dist/bundles/mediabunny-mp3-encoder.mjs',
+  flac:'https://cdn.jsdelivr.net/npm/@mediabunny/flac-encoder@1.62.1/dist/bundles/mediabunny-flac-encoder.mjs'
+};
+const encReady=new Set();
+const FATAL=new Set(['unknown_source_codec','undecodable_source_codec','no_encodable_target_codec','cannot_copy']);
+
+async function ensureEncoder(kind){
+  if(encReady.has(kind))return;
+  if(!await M.canEncodeAudio(kind)){
+    const mod=await import(ENC_URL[kind]);
+    if(kind==='mp3')mod.registerMp3Encoder();
+    else mod.registerFlacEncoder();
+  }
+  encReady.add(kind);
+}
+
 async function viaMediabunny(f,o){
-  const input=new M.Input({source:new M.BlobSource(file),formats:M.ALL_FORMATS});
   const cfg=f.mb();
+  if(f.enc)await ensureEncoder(f.enc);
+  const vSup=cfg.f.getSupportedVideoCodecs();
+  const aSup=cfg.f.getSupportedAudioCodecs();
+  const aList=cfg.ac.filter(c=>aSup.includes(c));
+  const ac=f.enc?aList[0]:await M.getFirstEncodableAudioCodec(aList);
+  if(!ac)throw new Error('この音声形式はブラウザの標準機能では作れません。');
+  const input=new M.Input({source:new M.BlobSource(file),formats:M.ALL_FORMATS});
   const target=new M.BufferTarget();
   const output=new M.Output({format:cfg.f,target});
-  const opts={input,output};
+  const opts={input,output,tracks:'primary'};
+  const a={codec:ac};
   if(f.g==='a'){
+    if(!f.lossless)a.bitrate=parseInt(o.ab,10)*1000;
     opts.video={discard:true};
-    opts.audio={codec:cfg.ac};
   }else{
-    const v={codec:cfg.vc};
+    const vc=await M.getFirstEncodableVideoCodec((cfg.vc||[]).filter(c=>vSup.includes(c)));
+    if(!vc)throw new Error('この映像形式はブラウザの標準機能では作れません。');
+    const v={codec:vc};
     const track=await input.getPrimaryVideoTrack();
     if(o.h&&track&&track.displayHeight>o.h)v.height=o.h;
     if(o.br)v.bitrate=o.br;
     if(o.force)v.forceTranscode=true;
     opts.video=v;
-    opts.audio={codec:cfg.ac};
   }
+  opts.audio=a;
   const conv=await M.Conversion.init(opts);
   if(!conv.isValid)throw new Error('この組み合わせはブラウザの標準機能では変換できません。');
+  const lost=(conv.discardedTracks||[]).some(d=>FATAL.has(d.reason)&&(d.track.isVideoTrack()||d.track.isAudioTrack()));
+  if(lost)throw new Error('ブラウザが扱えない音声・映像が含まれています。');
   conv.onProgress=p=>setProgress(p,'変換しています…');
   await conv.execute();
-  const dropped=(conv.discardedTracks||[]).filter(t=>t.reason!=='discarded_by_user');
-  if(dropped.length)$('warn').textContent='ブラウザが扱えない音声・映像が '+dropped.length+' 件あり、除外して変換しました。';
   return new Blob([target.buffer],{type:f.m});
 }
 
@@ -501,8 +545,8 @@ async function gifViaMediabunny(o){
     if(!item)continue;
     const cw=item.canvas.width,ch=item.canvas.height;
     const data=item.canvas.getContext('2d').getImageData(0,0,cw,ch).data;
-    const palette=quantize(data,256);
-    const index=applyPalette(data,palette);
+    const palette=quantize(data,256,{format:'rgb444'});
+    const index=applyPalette(data,palette,'rgb444');
     gif.writeFrame(index,cw,ch,{palette,delay:Math.round(1000/o.gf),repeat:o.gl?0:-1});
     setProgress(i/n,'GIFを作っています…');
   }
@@ -523,16 +567,16 @@ async function viaFFmpeg(f,o){
     let done=false;
     if(f.copy&&!o.h&&!o.br&&!o.force&&f.g==='v'){
       setProgress(0,'中身を変えずに変換できるか確認しています…');
-      const code=await inst.exec(['-i',inName,'-c','copy',outName]);
+      const code=await inst.exec(['-i',inName,'-map','0:v:0?','-map','0:a:0?','-c','copy',outName]);
       if(code===0)done=true;
       else try{await inst.deleteFile(outName)}catch(e){}
     }
     if(!done){
       const args=['-i',inName];
-      if(f.g==='v')args.push(...(o.h?['-vf','scale=-2:'+o.h]:[]),...f.ff(o.crf));
+      if(f.g==='v')args.push('-map','0:v:0','-map','0:a:0?',...(o.h?['-vf','scale=-2:'+o.h+':flags=fast_bilinear']:[]),...f.ff(o.crf));
       else if(f.g==='g'){
         const sc=o.gw?`scale=${o.gw}:-2`:'scale=iw:-2';
-        args.push('-vf',`fps=${o.gf},${sc}:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse`,'-loop',o.gl?'0':'-1');
+        args.push('-vf',`fps=${o.gf},${sc}:flags=fast_bilinear,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`,'-loop',o.gl?'0':'-1');
       }else args.push(...f.ff(o.ab));
       args.push(outName);
       const code=await inst.exec(args);
@@ -549,7 +593,7 @@ async function viaFFmpeg(f,o){
 async function convert(){
   const f=fmt();
   const o=readOpts();
-  const canMB=MB_INPUT.has(extOf(file.name))&&(f.mb||f.g==='g');
+  const canMB=!!(f.mb||f.g==='g');
   if(canMB){
     try{
       setProgress(0,'変換しています…');
