@@ -3,89 +3,226 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>動画コンバーター</title>
+<title>かんたん動画コンバーター</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1d29;--sub:#6b7085;--ac:#5b5bf0;--bd:#e3e5ef;--ok:#1a9d5c;--warn:#b26a00}
-@media(prefers-color-scheme:dark){:root{--bg:#14151d;--card:#1e2030;--tx:#eceefb;--sub:#9a9fb8;--ac:#8b8bff;--bd:#2d3047;--ok:#4cd28a;--warn:#f0b35a}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.6}
-main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
-h1{font-size:1.5rem;margin:8px 0 2px}
-p.s{color:var(--sub);margin:0 0 18px;font-size:.9rem}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px}
-#drop{border:2px dashed var(--bd);border-radius:14px;padding:28px 12px;text-align:center;cursor:pointer;color:var(--sub)}
-#drop.on{border-color:var(--ac);color:var(--ac)}
-label{display:block;font-size:.8rem;color:var(--sub);margin:12px 0 4px}
-select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:.9rem}
-button{width:100%;margin-top:16px;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
-button:disabled{opacity:.5;cursor:default}
-.bar{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;margin-top:12px}
-.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width .2s}
-#msg{font-size:.85rem;color:var(--sub);margin-top:8px;white-space:pre-wrap}
-#warn{font-size:.82rem;color:var(--warn);margin-top:8px;white-space:pre-wrap}
-video,audio{width:100%;border-radius:10px;margin-top:10px}
+:root{
+  --bg:#f3f4fb;--card:rgba(255,255,255,.86);--solid:#fff;--tx:#191b2a;--sub:#6a6f88;--bd:#e4e6f2;
+  --ac:#6a5cff;--ac2:#b05cff;--acs:rgba(106,92,255,.1);--ok:#12a566;--warn:#b26a00;--err:#d6334a;
+  --sh:0 10px 30px rgba(60,60,120,.08);
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0f1019;--card:rgba(30,32,50,.82);--solid:#1d1f31;--tx:#eef0ff;--sub:#9a9fbd;--bd:#2c2f4a;
+    --ac:#8d82ff;--ac2:#c786ff;--acs:rgba(141,130,255,.16);--ok:#4cd28a;--warn:#f0b35a;--err:#ff7088;--sh:0 10px 30px rgba(0,0,0,.35)}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;color:var(--tx);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.65;
+  background:radial-gradient(900px 500px at 10% -10%,rgba(106,92,255,.18),transparent 60%),radial-gradient(800px 500px at 100% 0%,rgba(176,92,255,.15),transparent 60%),var(--bg);min-height:100vh}
+main{max-width:680px;margin:0 auto;padding:28px 16px 60px}
+.hero{text-align:center;margin-bottom:26px}
+.logo{width:64px;height:64px;margin:0 auto 12px;border-radius:20px;display:grid;place-items:center;font-size:32px;color:#fff;
+  background:linear-gradient(135deg,var(--ac),var(--ac2));box-shadow:0 12px 28px rgba(106,92,255,.35)}
+h1{font-size:1.7rem;margin:0 0 6px;letter-spacing:.01em}
+.hero p{margin:0;color:var(--sub);font-size:.92rem}
+.badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.badges span{font-size:.74rem;padding:4px 10px;border-radius:99px;background:var(--acs);color:var(--ac);font-weight:600}
+.card{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:var(--sh);animation:rise .4s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.step{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.step b{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:.85rem;color:#fff;background:linear-gradient(135deg,var(--ac),var(--ac2))}
+.step h2{font-size:1.05rem;margin:0}
+.hint{font-size:.8rem;color:var(--sub);margin:6px 0 0}
+#drop{border:2px dashed var(--bd);border-radius:18px;padding:30px 14px;text-align:center;cursor:pointer;color:var(--sub);transition:.2s;background:var(--solid)}
+#drop:hover,#drop.on{border-color:var(--ac);background:var(--acs);color:var(--ac)}
+#drop .big{font-size:2.2rem;display:block;margin-bottom:6px;color:var(--ac)}
+#drop strong{display:block;color:var(--tx);font-size:1rem}
+#chip{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--solid);border:1px solid var(--bd)}
+#chip .ic{font-size:1.5rem;color:var(--ac);width:28px;text-align:center}
+#chip .nm{flex:1;min-width:0}
+#chip .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.92rem}
+#chip .nm small{color:var(--sub)}
+#chip button{border:0;background:var(--acs);color:var(--ac);border-radius:10px;padding:7px 12px;font-weight:600;cursor:pointer;font-size:.8rem}
+.tabs{display:flex;gap:6px;padding:4px;border-radius:14px;background:var(--acs);margin-bottom:14px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--sub);padding:9px 4px;border-radius:11px;font-weight:700;font-size:.88rem;cursor:pointer;transition:.2s}
+.tabs button.on{background:var(--solid);color:var(--ac);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fc{position:relative;text-align:left;border:2px solid var(--bd);background:var(--solid);color:var(--tx);border-radius:16px;padding:12px;cursor:pointer;transition:.18s;font:inherit}
+.fc:hover{transform:translateY(-2px)}
+.fc.on{border-color:var(--ac);background:var(--acs)}
+.fc .ic{font-size:1.4rem;color:var(--ac)}
+.fc b{display:block;font-size:.98rem;margin-top:2px}
+.fc small{display:block;color:var(--sub);font-size:.74rem;line-height:1.4;margin-top:2px}
+.tag{position:absolute;top:8px;right:8px;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:99px}
+.tag.rec{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+.tag.slow{background:var(--bd);color:var(--sub)}
+.field{margin-top:18px;position:relative}
+.field>label{display:block;font-size:.84rem;font-weight:700;margin-bottom:6px}
+.seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--acs)}
+.seg button{flex:1;border:0;background:transparent;color:var(--sub);padding:9px 2px;border-radius:11px;font-weight:700;font-size:.82rem;cursor:pointer;transition:.18s;font-family:inherit}
+.seg button.on{background:var(--solid);color:var(--ac);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.dd{position:relative}
+.dd-btn{width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;border:1px solid var(--bd);background:var(--solid);color:var(--tx);font:inherit;font-size:.92rem;cursor:pointer}
+.dd-btn i{font-style:normal;color:var(--sub);transition:.2s}
+.dd.open .dd-btn{border-color:var(--ac)}
+.dd.open .dd-btn i{transform:rotate(180deg)}
+.dd-list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;margin:0;padding:6px;list-style:none;background:var(--solid);border:1px solid var(--bd);border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.18)}
+.dd-list li{padding:10px 12px;border-radius:10px;font-size:.9rem;cursor:pointer}
+.dd-list li:hover{background:var(--acs)}
+.dd-list li.on{background:var(--acs);color:var(--ac);font-weight:700}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--bd);background:var(--solid);cursor:pointer}
+.sw span{font-size:.88rem}
+.sw small{display:block;color:var(--sub);font-size:.74rem}
+.sw i{flex:none;width:44px;height:26px;border-radius:99px;background:var(--bd);position:relative;transition:.2s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.sw.on i{background:linear-gradient(135deg,var(--ac),var(--ac2))}
+.sw.on i::after{left:21px}
+.go{width:100%;margin-top:4px;padding:16px;border:0;border-radius:18px;color:#fff;font-size:1.05rem;font-weight:800;cursor:pointer;font-family:inherit;
+  background:linear-gradient(135deg,var(--ac),var(--ac2));box-shadow:0 12px 26px rgba(106,92,255,.35);transition:.2s}
+.go:hover:not(:disabled){transform:translateY(-2px)}
+.go:disabled{opacity:.55;cursor:default;box-shadow:none}
+#prog{margin-top:16px}
+.pt{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+#pct{font-size:1.5rem;font-weight:800;color:var(--ac)}
+#msg{font-size:.84rem;color:var(--sub)}
+.bar{height:12px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .25s}
+.bar.busy i{background-size:200% 100%;animation:sh 1.2s linear infinite;background-image:linear-gradient(90deg,var(--ac),var(--ac2),var(--ac))}
+@keyframes sh{to{background-position:-200% 0}}
+#warn{font-size:.82rem;color:var(--warn);margin-top:10px;white-space:pre-wrap}
+#err{font-size:.86rem;color:var(--err);margin-top:10px;white-space:pre-wrap}
+.done{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.done .ck{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:#fff;font-size:1.1rem}
+.done h2{margin:0;font-size:1.1rem}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.sum div{background:var(--solid);border:1px solid var(--bd);border-radius:14px;padding:10px;text-align:center}
+.sum small{display:block;color:var(--sub);font-size:.7rem}
+.sum b{font-size:.92rem}
+video,audio{width:100%;border-radius:16px;margin-top:6px}
 video{background:#000}
-img{max-width:100%;border-radius:10px;margin-top:10px}
-a.dl{display:block;text-align:center;margin-top:12px;padding:12px;border-radius:12px;background:var(--ok);color:#fff;text-decoration:none;font-weight:600}
-.note{font-size:.78rem;color:var(--sub)}
+img.pv{max-width:100%;border-radius:16px;display:block;margin:6px auto 0}
+a.dl{display:block;text-align:center;margin-top:14px;padding:15px;border-radius:16px;background:var(--ok);color:#fff;text-decoration:none;font-weight:800}
+.reset{width:100%;margin-top:10px;padding:12px;border-radius:14px;border:1px solid var(--bd);background:transparent;color:var(--sub);font-weight:700;cursor:pointer;font-family:inherit}
+details{border-top:1px solid var(--bd);padding:12px 0}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;font-weight:700;font-size:.9rem}
+details p{margin:8px 0 0;color:var(--sub);font-size:.84rem}
+.foot{text-align:center;color:var(--sub);font-size:.75rem;margin-top:24px}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
-<h1>🎞️ 動画コンバーター</h1>
-<p class="s">まずブラウザ標準のWebCodecsで高速変換し、対応できない形式だけffmpeg.wasmに切り替えます。</p>
+<header class="hero">
+  <div class="logo"><i class="fa-solid fa-film"></i></div>
+  <h1>かんたん動画コンバーター</h1>
+  <p>動画・音声・GIFを、好きな形式に変換できます。</p>
+  <div class="badges"><span><i class="fa-solid fa-lock"></i> ファイルは送信されません</span><span><i class="fa-solid fa-circle-check"></i> 無料</span><span><i class="fa-solid fa-mobile-screen"></i> スマホ対応</span></div>
+</header>
 
-<div class="card">
-  <div id="drop">タップして動画・音声・GIFを選択<br><small>またはここにドラッグ＆ドロップ</small></div>
+<section class="card" id="s1">
+  <div class="step"><b>1</b><h2>変換したいファイルを選ぶ</h2></div>
+  <div id="drop" role="button" tabindex="0">
+    <span class="big"><i class="fa-solid fa-folder-open"></i></span>
+    <strong>ここをタップしてファイルを選択</strong>
+    <small>パソコンならドラッグ＆ドロップもできます</small>
+  </div>
+  <div id="chip" hidden>
+    <span class="ic" id="chipIc"><i class="fa-solid fa-film"></i></span>
+    <div class="nm"><b id="chipName"></b><small id="chipSize"></small></div>
+    <button type="button" id="chipChange">変更</button>
+  </div>
   <input type="file" id="file" accept="video/*,audio/*,image/gif,.mkv,.avi,.mov,.flv,.wmv,.ts,.mts,.m2ts,.3gp,.mpg,.mpeg,.ogv,.m4v,.webm,.mp4,.vob,.asf,.divx,.mxf,.gif" hidden>
-  <div id="info" class="note" style="margin-top:10px" hidden></div>
-</div>
+  <p class="hint">MP4・MOV・MKV・AVI・WebM・GIF・MP3など、ほとんどの動画と音声に対応しています。</p>
+</section>
 
-<div class="card" id="opts" hidden>
-  <label>変換後の形式</label>
-  <select id="fmt"></select>
+<section class="card" id="s2" hidden>
+  <div class="step"><b>2</b><h2>どの形式に変換する？</h2></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
+  <p class="hint" id="fhint">迷ったら「おすすめ」マークの形式を選べば大丈夫です。</p>
+</section>
+
+<section class="card" id="s3" hidden>
+  <div class="step"><b>3</b><h2>仕上がりを選ぶ</h2></div>
 
   <div id="vopts">
-    <div class="row">
-      <div><label>解像度</label>
-        <select id="res"><option value="0" selected>元のまま</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option><option value="360">360p</option></select></div>
-      <div><label>画質</label>
-        <select id="q"><option value="auto" selected>元のまま（可能なら再エンコードなし）</option><option value="8000000|20">高</option><option value="4000000|24">標準</option><option value="1500000|30">低（小さい）</option></select></div>
+    <div class="field" style="margin-top:0">
+      <label>画質</label>
+      <div id="presetSeg"></div>
+      <p class="hint" id="presetHint"></p>
     </div>
-    <label class="chk"><input type="checkbox" id="force"> 必ず再エンコードする（古い環境でも再生したいとき）</label>
+    <div class="field">
+      <label>画面の大きさ</label>
+      <div id="resDd"></div>
+      <p class="hint">小さくするほどファイルが軽くなります。</p>
+    </div>
+    <div class="field">
+      <div class="sw" id="forceSw" role="switch" aria-checked="false" tabindex="0">
+        <span>古い機器でも再生できるようにする<small>変換に少し時間がかかりますが、再生トラブルが減ります。</small></span>
+        <i></i>
+      </div>
+    </div>
   </div>
 
   <div id="gopts" hidden>
-    <div class="row">
-      <div><label>出力幅</label>
-        <select id="gw"><option value="0">元のまま</option><option value="720">720 px</option><option value="480" selected>480 px</option><option value="360">360 px</option></select></div>
-      <div><label>フレームレート</label>
-        <select id="gf"><option value="8">8 fps</option><option value="12" selected>12 fps</option><option value="15">15 fps</option><option value="24">24 fps</option></select></div>
+    <div class="field" style="margin-top:0">
+      <label>GIFの大きさ</label>
+      <div id="gwDd"></div>
+      <p class="hint">大きいほどきれいですが、ファイルも重くなります。</p>
     </div>
-    <label>ループ</label>
-    <select id="gl"><option value="1" selected>無限ループ</option><option value="0">1回再生</option></select>
-    <p class="note">GIFは長さに応じて急激に大きくなります。約15秒以内がおすすめです。</p>
+    <div class="field">
+      <label>動きのなめらかさ</label>
+      <div id="gfDd"></div>
+    </div>
+    <div class="field">
+      <label>くり返し</label>
+      <div id="glSeg"></div>
+    </div>
+    <p class="hint">GIFは長い動画だとすぐ重くなります。15秒ほどまでがおすすめです。</p>
   </div>
 
   <div id="aopts" hidden>
-    <label>音質</label>
-    <select id="ab"><option value="96k">96 kbps</option><option value="128k">128 kbps</option><option value="192k" selected>192 kbps</option><option value="320k">320 kbps</option></select>
+    <div class="field" style="margin-top:0">
+      <label>音質</label>
+      <div id="abSeg"></div>
+      <p class="hint" id="abHint">数字が大きいほど高音質で、ファイルも大きくなります。</p>
+    </div>
   </div>
+</section>
 
-  <button id="go" disabled>準備中…</button>
-  <div class="bar"><i id="pb"></i></div>
-  <div id="msg"></div>
-  <div id="warn"></div>
-</div>
+<section id="s4" hidden>
+  <button class="go" id="go" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> 変換をはじめる</button>
+  <div id="prog" class="card" hidden>
+    <div class="pt"><span id="msg"></span><span id="pct">0%</span></div>
+    <div class="bar" id="bar"><i id="pb"></i></div>
+    <div id="warn"></div>
+    <div id="err"></div>
+  </div>
+</section>
 
-<div class="card" id="out" hidden>
-  <strong>完成しました 🎉</strong>
+<section class="card" id="out" hidden>
+  <div class="done"><div class="ck"><i class="fa-solid fa-check"></i></div><h2>変換が完了しました！</h2></div>
+  <div class="sum">
+    <div><small>変換前</small><b id="sumBefore"></b></div>
+    <div><small>変換後</small><b id="sumAfter"></b></div>
+    <div><small>かかった時間</small><b id="sumTime"></b></div>
+  </div>
   <div id="pvbox"></div>
-  <a class="dl" id="dl">ダウンロード</a>
-</div>
+  <a class="dl" id="dl"><i class="fa-solid fa-download"></i> ダウンロードする</a>
+  <button class="reset" id="again" type="button"><i class="fa-solid fa-rotate-left"></i> 別のファイルを変換する</button>
+  <p class="hint" id="engine" style="text-align:center"></p>
+</section>
+
+<section class="card">
+  <div class="step"><h2>よくある質問</h2></div>
+  <details><summary>動画はインターネットに送られますか？</summary><p>いいえ。変換はすべてお使いの端末の中で行われ、動画が外部のサーバーに送られることはありません。</p></details>
+  <details><summary>どの形式を選べばいいですか？</summary><p>動画なら「MP4」、音声なら「MP3」か「M4A」がおすすめです。ほとんどの機器やアプリで再生できます。</p></details>
+  <details><summary>変換に時間がかかります</summary><p>中身を変えずに入れ物だけ変える場合は、数秒で終わります。画質やサイズを変える場合は、動画の長さと端末の性能に応じて時間がかかります。変換中は、このページを開いたままにしてください。</p></details>
+  <details><summary>「互換モード」とは何ですか？</summary><p>ブラウザの標準機能で変換できないときに、別のエンジンを使う方式です。初回だけ約30MBの読み込みが必要で、高速モードより時間がかかります。</p></details>
+  <details><summary>プレビューが再生できません</summary><p>ブラウザが対応していない形式は、プレビューできないことがあります。ダウンロードしたファイルは、対応するプレイヤー（VLCなど）で再生できます。</p></details>
+</section>
+<p class="foot">ブラウザの機能（WebCodecs）と ffmpeg.wasm を使って、端末内で変換しています。</p>
 </main>
 
 <script type="module">
@@ -94,71 +231,198 @@ import{GIFEncoder,quantize,applyPalette}from 'https://cdn.jsdelivr.net/npm/gifen
 
 const $=id=>document.getElementById(id);
 const MB_INPUT=new Set(['mp4','m4v','m4a','mov','mkv','mka','webm','ogg','ogv','oga','opus','mp3','wav','flac','aac','ts','mts','m2ts']);
-
 const X264=['-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p'];
-const FORMATS=[
- {l:'MP4 (H.264/AAC)',e:'mp4',k:'v',m:'video/mp4',copy:1,mb:()=>({f:new M.Mp4OutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k','-movflags','+faststart']},
- {l:'MOV (H.264/AAC)',e:'mov',k:'v',m:'video/quicktime',copy:1,mb:()=>({f:new M.MovOutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
- {l:'MKV (H.264/AAC)',e:'mkv',k:'v',m:'video/x-matroska',copy:1,mb:()=>({f:new M.MkvOutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
- {l:'WebM (VP9/Opus)',e:'webm',k:'v',m:'video/webm',mb:()=>({f:new M.WebMOutputFormat(),vc:'vp9',ac:'opus'}),ff:c=>['-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','0','-crf',String(+c+4),'-c:a','libvorbis']},
- {l:'AVI (MPEG-4/MP3)',e:'avi',k:'v',m:'video/x-msvideo',ff:()=>['-c:v','mpeg4','-q:v','4','-c:a','libmp3lame','-b:a','128k']},
- {l:'FLV (H.264/AAC)',e:'flv',k:'v',m:'video/x-flv',ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
- {l:'GIF（アニメーション）',e:'gif',k:'g',m:'image/gif',ff:()=>[]},
- {l:'音声 M4A (AAC)',e:'m4a',k:'a',m:'audio/mp4',mb:()=>({f:new M.Mp4OutputFormat(),ac:'aac'}),ff:b=>['-vn','-c:a','aac','-b:a',b]},
- {l:'音声 WAV',e:'wav',k:'a',m:'audio/wav',mb:()=>({f:new M.WavOutputFormat(),ac:'pcm-s16'}),ff:()=>['-vn','-c:a','pcm_s16le']},
- {l:'音声 Opus (OGG)',e:'opus',k:'a',m:'audio/ogg',mb:()=>({f:new M.OggOutputFormat(),ac:'opus'}),ff:b=>['-vn','-c:a','libopus','-b:a',b]},
- {l:'音声 MP3',e:'mp3',k:'a',m:'audio/mpeg',ff:b=>['-vn','-c:a','libmp3lame','-b:a',b]},
- {l:'音声 OGG (Vorbis)',e:'ogg',k:'a',m:'audio/ogg',ff:b=>['-vn','-c:a','libvorbis','-b:a',b]},
- {l:'音声 FLAC',e:'flac',k:'a',m:'audio/flac',ff:()=>['-vn','-c:a','flac']}
-];
-$('fmt').innerHTML=FORMATS.map((f,i)=>`<option value="${i}">${f.l}</option>`).join('');
 
-const syncOpts=()=>{
-  const k=FORMATS[$('fmt').value].k;
+const FORMATS=[
+ {n:'MP4',ic:'fa-solid fa-film',d:'ほとんどの機器やSNSで再生できる定番',g:'v',rec:1,e:'mp4',m:'video/mp4',copy:1,mb:()=>({f:new M.Mp4OutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k','-movflags','+faststart']},
+ {n:'MOV',ic:'fa-brands fa-apple',d:'iPhoneやMacでよく使われる形式',g:'v',e:'mov',m:'video/quicktime',copy:1,mb:()=>({f:new M.MovOutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
+ {n:'MKV',ic:'fa-solid fa-box-archive',d:'複数の音声や字幕を入れやすい形式',g:'v',e:'mkv',m:'video/x-matroska',copy:1,mb:()=>({f:new M.MkvOutputFormat(),vc:'avc',ac:'aac'}),ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
+ {n:'WebM',ic:'fa-solid fa-globe',d:'Webサイト向けの軽い形式',g:'v',e:'webm',m:'video/webm',mb:()=>({f:new M.WebMOutputFormat(),vc:'vp9',ac:'opus'}),ff:c=>['-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','0','-crf',String(+c+4),'-c:a','libvorbis']},
+ {n:'AVI',ic:'fa-solid fa-video',d:'古いソフトやパソコン向けの形式',g:'v',slow:1,e:'avi',m:'video/x-msvideo',ff:()=>['-c:v','mpeg4','-q:v','4','-c:a','libmp3lame','-b:a','128k']},
+ {n:'FLV',ic:'fa-solid fa-tv',d:'昔のFlash系サービスで使われた形式',g:'v',slow:1,e:'flv',m:'video/x-flv',ff:c=>[...X264,'-crf',c,'-c:a','aac','-b:a','128k']},
+ {n:'MP3',ic:'fa-solid fa-music',d:'どこでも再生できる音声の定番',g:'a',rec:1,slow:1,e:'mp3',m:'audio/mpeg',ff:b=>['-vn','-c:a','libmp3lame','-b:a',b]},
+ {n:'M4A',ic:'fa-solid fa-headphones',d:'iPhoneなどで使いやすい音声',g:'a',e:'m4a',m:'audio/mp4',mb:()=>({f:new M.Mp4OutputFormat(),ac:'aac'}),ff:b=>['-vn','-c:a','aac','-b:a',b]},
+ {n:'WAV',ic:'fa-solid fa-microphone-lines',d:'無圧縮で高音質（ファイルは大きめ）',g:'a',lossless:1,e:'wav',m:'audio/wav',mb:()=>({f:new M.WavOutputFormat(),ac:'pcm-s16'}),ff:()=>['-vn','-c:a','pcm_s16le']},
+ {n:'Opus',ic:'fa-solid fa-wave-square',d:'小さくて高音質な音声',g:'a',e:'opus',m:'audio/ogg',mb:()=>({f:new M.OggOutputFormat(),ac:'opus'}),ff:b=>['-vn','-c:a','libopus','-b:a',b]},
+ {n:'OGG',ic:'fa-solid fa-volume-high',d:'オープンな音声形式',g:'a',slow:1,e:'ogg',m:'audio/ogg',ff:b=>['-vn','-c:a','libvorbis','-b:a',b]},
+ {n:'FLAC',ic:'fa-solid fa-compact-disc',d:'音質を落とさず圧縮できる形式',g:'a',slow:1,lossless:1,e:'flac',m:'audio/flac',ff:()=>['-vn','-c:a','flac']},
+ {n:'GIF',ic:'fa-solid fa-image',d:'短い動きをチャットやSNSで共有',g:'g',rec:1,e:'gif',m:'image/gif',ff:()=>[]}
+];
+const TABS=[['v','fa-solid fa-film','動画'],['a','fa-solid fa-headphones','音声'],['g','fa-solid fa-image','GIF']];
+const PRESETS=[
+ ['keep','そのまま',[0,'23'],'画質を落とさず、できるだけ速く変換します。'],
+ ['high','高画質',[8000000,'20'],'きれいさを重視します。ファイルは大きめです。'],
+ ['mid','ふつう',[4000000,'24'],'画質とファイルサイズのバランス型です。'],
+ ['low','小さく',[1500000,'30'],'ファイルサイズを小さくします。画質は少し下がります。']
+];
+
+const S={tab:'v',fi:0,preset:'keep',res:0,force:false,gw:480,gf:12,gl:true,ab:'192k'};
+let file=null,busy=false,outUrl=null,ff=null,flvPlayer=null;
+
+function dropdown(root,items,value,onChange){
+  root.classList.add('dd');
+  const btn=document.createElement('button');
+  btn.type='button';btn.className='dd-btn';
+  const label=document.createElement('span');
+  const caret=document.createElement('i');
+  caret.textContent='▾';
+  btn.append(label,caret);
+  const list=document.createElement('ul');
+  list.className='dd-list';list.hidden=true;
+  list.setAttribute('role','listbox');
+  let cur=value;
+  const close=()=>{list.hidden=true;root.classList.remove('open')};
+  const render=()=>{
+    label.textContent=items.find(x=>x[0]===cur)[1];
+    list.innerHTML='';
+    items.forEach(([v,t])=>{
+      const li=document.createElement('li');
+      li.textContent=t;
+      li.setAttribute('role','option');
+      if(v===cur)li.className='on';
+      li.onclick=e=>{e.stopPropagation();cur=v;render();close();onChange(v)};
+      list.appendChild(li);
+    });
+  };
+  btn.onclick=e=>{
+    e.stopPropagation();
+    const willOpen=list.hidden;
+    document.querySelectorAll('.dd.open').forEach(d=>{d.classList.remove('open');d.querySelector('.dd-list').hidden=true});
+    list.hidden=!willOpen;
+    root.classList.toggle('open',willOpen);
+  };
+  document.addEventListener('click',close);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  root.append(btn,list);
+  render();
+}
+
+function segmented(root,items,value,onChange){
+  root.classList.add('seg');
+  const render=cur=>{
+    root.innerHTML='';
+    items.forEach(([v,t])=>{
+      const b=document.createElement('button');
+      b.type='button';b.textContent=t;
+      if(v===cur)b.className='on';
+      b.onclick=()=>{render(v);onChange(v)};
+      root.appendChild(b);
+    });
+  };
+  render(value);
+}
+
+const fmt=()=>FORMATS[S.fi];
+const extOf=n=>((n.match(/\.([^.]+)$/)||[,''])[1]).toLowerCase();
+const mb=n=>(n/1048576).toFixed(n<10485760?2:1)+' MB';
+
+function renderFormats(){
+  $('tabs').innerHTML='';
+  TABS.forEach(([k,ic,t])=>{
+    const b=document.createElement('button');
+    b.type='button';b.innerHTML=`<i class="${ic}"></i> ${t}`;
+    if(k===S.tab)b.className='on';
+    b.onclick=()=>{
+      S.tab=k;
+      S.fi=FORMATS.findIndex(f=>f.g===k&&f.rec)>=0?FORMATS.findIndex(f=>f.g===k&&f.rec):FORMATS.findIndex(f=>f.g===k);
+      renderFormats();renderSettings();
+    };
+    $('tabs').appendChild(b);
+  });
+  $('grid').innerHTML='';
+  FORMATS.forEach((f,i)=>{
+    if(f.g!==S.tab)return;
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='fc'+(i===S.fi?' on':'');
+    b.innerHTML=`<span class="ic"><i class="${f.ic}"></i></span><b>${f.n}</b><small>${f.d}</small>`+(f.rec?'<span class="tag rec">おすすめ</span>':f.slow?'<span class="tag slow">互換モード</span>':'');
+    b.onclick=()=>{S.fi=i;renderFormats();renderSettings()};
+    $('grid').appendChild(b);
+  });
+  $('fhint').textContent=fmt().slow?'この形式は「互換モード」で変換します。初回は準備に時間がかかります。':'迷ったら「おすすめ」マークの形式を選べば大丈夫です。';
+}
+
+function renderSettings(){
+  const k=fmt().g;
   $('vopts').hidden=k!=='v';
   $('gopts').hidden=k!=='g';
   $('aopts').hidden=k!=='a';
-};
-$('fmt').onchange=syncOpts;
-syncOpts();
+  if(k==='a'){
+    $('abHint').textContent=fmt().lossless?'この形式は音質が劣化しないため、音質の設定は使いません。':'数字が大きいほど高音質で、ファイルも大きくなります。';
+    $('abSeg').style.opacity=fmt().lossless?'.4':'1';
+    $('abSeg').style.pointerEvents=fmt().lossless?'none':'auto';
+  }
+}
 
-let file=null,busy=false,outUrl=null,ff=null;
-const setP=(p,t)=>{$('pb').style.width=(Math.max(0,Math.min(1,p))*100).toFixed(0)+'%';if(t!=null)$('msg').textContent=t};
-const extOf=n=>((n.match(/\.([^.]+)$/)||[,''])[1]).toLowerCase();
-const refresh=()=>{$('go').disabled=!file||busy;$('go').textContent=busy?'変換中…':'変換する'};
-refresh();
+function setProgress(p,t){
+  const v=Math.max(0,Math.min(1,p));
+  $('pb').style.width=(v*100).toFixed(0)+'%';
+  $('pct').textContent=(v*100).toFixed(0)+'%';
+  if(t!=null)$('msg').textContent=t;
+}
 
-const drop=$('drop');
-drop.onclick=()=>$('file').click();
-$('file').onchange=e=>pick(e.target.files[0]);
-['dragover','dragenter'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('on')}));
-['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('on')}));
-drop.addEventListener('drop',e=>pick(e.dataTransfer.files[0]));
+function setBusy(b){
+  busy=b;
+  $('go').disabled=b||!file;
+  $('go').innerHTML=b?'<i class="fa-solid fa-spinner fa-spin"></i> 変換中…（このページを開いたままにしてください）':'<i class="fa-solid fa-wand-magic-sparkles"></i> 変換をはじめる';
+  $('bar').classList.toggle('busy',b);
+}
 
 function pick(f){
   if(!f)return;
   file=f;
-  drop.textContent='✅ '+f.name;
-  $('info').hidden=false;
-  $('info').textContent=(f.size/1048576).toFixed(1)+' MB';
-  $('opts').hidden=false;
+  const ext=extOf(f.name);
+  const isAudio=f.type.startsWith('audio/')||['mp3','wav','flac','aac','m4a','ogg','oga','opus','mka'].includes(ext);
+  $('chipIc').firstElementChild.className=ext==='gif'?'fa-solid fa-image':isAudio?'fa-solid fa-headphones':'fa-solid fa-film';
+  $('chipName').textContent=f.name;
+  $('chipSize').textContent=mb(f.size);
+  $('drop').hidden=true;
+  $('chip').hidden=false;
+  ['s2','s3','s4'].forEach(id=>$(id).hidden=false);
   $('out').hidden=true;
-  $('warn').textContent='';
-  setP(0,'');
-  refresh();
+  $('prog').hidden=true;
+  setBusy(false);
+  $('s2').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+$('drop').onclick=()=>$('file').click();
+$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click()}};
+$('chipChange').onclick=()=>$('file').click();
+$('file').onchange=e=>{pick(e.target.files[0]);e.target.value=''};
+['dragover','dragenter'].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();$('drop').classList.add('on')}));
+['dragleave','drop'].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();$('drop').classList.remove('on')}));
+document.addEventListener('drop',e=>{if(e.dataTransfer&&e.dataTransfer.files[0])pick(e.dataTransfer.files[0])});
+
+segmented($('presetSeg'),PRESETS.map(p=>[p[0],p[1]]),S.preset,v=>{S.preset=v;$('presetHint').textContent=PRESETS.find(p=>p[0]===v)[3]});
+$('presetHint').textContent=PRESETS[0][3];
+dropdown($('resDd'),[[0,'元の大きさのまま'],[1080,'フルHD（1080p）'],[720,'HD（720p）'],[480,'標準（480p）'],[360,'小さめ（360p）']],0,v=>S.res=v);
+dropdown($('gwDd'),[[0,'元の大きさのまま'],[720,'大きめ（横720px）'],[480,'ふつう（横480px）'],[360,'小さめ（横360px）']],480,v=>S.gw=v);
+dropdown($('gfDd'),[[8,'軽い（1秒に8コマ）'],[12,'ふつう（1秒に12コマ）'],[15,'なめらか（1秒に15コマ）'],[24,'とてもなめらか（1秒に24コマ）']],12,v=>S.gf=v);
+segmented($('glSeg'),[[true,'ずっとくり返す'],[false,'1回だけ']],true,v=>S.gl=v);
+segmented($('abSeg'),[['96k','低'],['128k','ふつう'],['192k','高'],['320k','最高']],'192k',v=>S.ab=v);
+const toggleForce=()=>{
+  S.force=!S.force;
+  $('forceSw').classList.toggle('on',S.force);
+  $('forceSw').setAttribute('aria-checked',String(S.force));
+};
+$('forceSw').onclick=toggleForce;
+$('forceSw').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleForce()}};
+
+renderFormats();
+renderSettings();
 
 function loadScript(src){
   return new Promise((ok,ng)=>{
     const s=document.createElement('script');
-    s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('スクリプトを読み込めません: '+src));
+    s.src=src;s.onload=ok;
+    s.onerror=()=>ng(new Error('必要なファイルを読み込めませんでした。ネットワーク接続を確認してください。'));
     document.head.appendChild(s);
   });
 }
 
 async function getFF(){
   if(ff)return ff;
-  setP(0,'ffmpeg.wasmを読み込み中（初回のみ約30MB）…');
+  setProgress(0,'互換モードの準備中…（初回のみ約30MB）');
   await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
   await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js');
   const inst=new FFmpegWASM.FFmpeg();
@@ -175,18 +439,8 @@ async function getFF(){
 }
 
 function readOpts(){
-  const q=$('q').value;
-  const[br,crf]=q==='auto'?[0,'23']:q.split('|');
-  return{
-    h:+$('res').value,
-    br:+br,
-    crf:String(crf),
-    force:$('force').checked,
-    ab:$('ab').value,
-    gw:+$('gw').value,
-    gf:+$('gf').value,
-    gl:$('gl').value==='1'
-  };
+  const[br,crf]=PRESETS.find(p=>p[0]===S.preset)[2];
+  return{h:S.res,br,crf,force:S.force,ab:S.ab,gw:S.gw,gf:S.gf,gl:S.gl};
 }
 
 async function viaMediabunny(f,o){
@@ -195,7 +449,7 @@ async function viaMediabunny(f,o){
   const target=new M.BufferTarget();
   const output=new M.Output({format:cfg.f,target});
   const opts={input,output};
-  if(f.k==='a'){
+  if(f.g==='a'){
     opts.video={discard:true};
     opts.audio={codec:cfg.ac};
   }else{
@@ -208,24 +462,19 @@ async function viaMediabunny(f,o){
     opts.audio={codec:cfg.ac};
   }
   const conv=await M.Conversion.init(opts);
-  if(!conv.isValid){
-    const why=(conv.discardedTracks||[]).map(t=>t.reason).join(', ');
-    throw new Error('WebCodecsでは変換できない組み合わせです'+(why?'（'+why+'）':''));
-  }
-  conv.onProgress=p=>setP(p,'変換中… '+Math.round(p*100)+'%');
+  if(!conv.isValid)throw new Error('この組み合わせはブラウザの標準機能では変換できません。');
+  conv.onProgress=p=>setProgress(p,'変換しています…');
   await conv.execute();
   const dropped=(conv.discardedTracks||[]).filter(t=>t.reason!=='discarded_by_user');
-  if(dropped.length){
-    $('warn').textContent='変換できず除外されたトラック: '+dropped.length+' 件（'+[...new Set(dropped.map(t=>t.reason))].join(', ')+'）';
-  }
+  if(dropped.length)$('warn').textContent='ブラウザが扱えない音声・映像が '+dropped.length+' 件あり、除外して変換しました。';
   return new Blob([target.buffer],{type:f.m});
 }
 
 async function gifViaMediabunny(o){
   const input=new M.Input({source:new M.BlobSource(file),formats:M.ALL_FORMATS});
   const track=await input.getPrimaryVideoTrack();
-  if(!track)throw new Error('映像トラックがありません');
-  if(!await track.canDecode())throw new Error('このブラウザでは映像をデコードできません');
+  if(!track)throw new Error('映像が見つかりませんでした。');
+  if(!await track.canDecode())throw new Error('このブラウザでは映像を読み取れません。');
   const dur=await input.computeDuration();
   const sw=track.displayWidth,sh=track.displayHeight;
   const w=o.gw&&sw>o.gw?o.gw:sw;
@@ -243,7 +492,7 @@ async function gifViaMediabunny(o){
     const palette=quantize(data,256);
     const index=applyPalette(data,palette);
     gif.writeFrame(index,cw,ch,{palette,delay:Math.round(1000/o.gf),repeat:o.gl?0:-1});
-    setP(i/n,'GIFを生成中… '+i+' / '+n+' フレーム');
+    setProgress(i/n,'GIFを作っています…');
   }
   gif.finish();
   return new Blob([gif.bytes()],{type:'image/gif'});
@@ -253,31 +502,29 @@ async function viaFFmpeg(f,o){
   const inst=await getFF();
   const ext=extOf(file.name)||'bin';
   const inName='input.'+ext,outName='output.'+f.e;
-  const onProg=({progress})=>setP(progress,'ffmpeg.wasmで変換中… '+Math.round(progress*100)+'%');
+  const onProg=({progress})=>setProgress(progress,'互換モードで変換しています…');
   inst.on('progress',onProg);
   window.__log='';
   try{
-    setP(0,'ファイルを読み込み中…');
+    setProgress(0,'ファイルを読み込んでいます…');
     await inst.writeFile(inName,await FFmpegUtil.fetchFile(file));
-    const scale=o.h?['-vf','scale=-2:'+o.h]:[];
     let done=false;
-    if(f.copy&&!o.h&&!o.br&&!o.force&&f.k==='v'){
-      setP(0,'再エンコードなしで変換を試行中…');
+    if(f.copy&&!o.h&&!o.br&&!o.force&&f.g==='v'){
+      setProgress(0,'中身を変えずに変換できるか確認しています…');
       const code=await inst.exec(['-i',inName,'-c','copy',outName]);
       if(code===0)done=true;
       else try{await inst.deleteFile(outName)}catch(e){}
     }
     if(!done){
-      let args=['-i',inName];
-      if(f.k==='v')args.push(...scale,...f.ff(o.crf));
-      else if(f.k==='g'){
-        const w=o.gw?o.gw:-2;
-        const sc=o.gw?`scale=${w}:-2`:'scale=iw:-2';
+      const args=['-i',inName];
+      if(f.g==='v')args.push(...(o.h?['-vf','scale=-2:'+o.h]:[]),...f.ff(o.crf));
+      else if(f.g==='g'){
+        const sc=o.gw?`scale=${o.gw}:-2`:'scale=iw:-2';
         args.push('-vf',`fps=${o.gf},${sc}:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse`,'-loop',o.gl?'0':'-1');
       }else args.push(...f.ff(o.ab));
       args.push(outName);
       const code=await inst.exec(args);
-      if(code!==0)throw new Error('ffmpegでの変換に失敗しました（コード '+code+'）\n'+(window.__log||'').split('\n').slice(-4).join('\n'));
+      if(code!==0)throw new Error('変換に失敗しました。ファイルが壊れているか、この組み合わせに対応していない可能性があります。\n'+(window.__log||'').split('\n').slice(-3).join('\n'));
     }
     const data=await inst.readFile(outName);
     try{await inst.deleteFile(inName);await inst.deleteFile(outName)}catch(e){}
@@ -288,31 +535,71 @@ async function viaFFmpeg(f,o){
 }
 
 async function convert(){
-  const f=FORMATS[$('fmt').value];
+  const f=fmt();
   const o=readOpts();
-  const ext=extOf(file.name);
-  const canMB=MB_INPUT.has(ext)&&(f.mb||f.k==='g');
+  const canMB=MB_INPUT.has(extOf(file.name))&&(f.mb||f.g==='g');
   if(canMB){
     try{
-      setP(0,'WebCodecsで変換中…');
-      const blob=f.k==='g'?await gifViaMediabunny(o):await viaMediabunny(f,o);
-      return{blob,engine:'WebCodecs（mediabunny）'};
+      setProgress(0,'変換しています…');
+      const blob=f.g==='g'?await gifViaMediabunny(o):await viaMediabunny(f,o);
+      return{blob,engine:'<i class="fa-solid fa-bolt"></i> 高速モード（ブラウザ標準機能）で変換しました'};
     }catch(err){
       console.warn(err);
-      $('warn').textContent='WebCodecsで変換できなかったためffmpeg.wasmに切り替えました：'+(err.message||err);
-      setP(0,'ffmpeg.wasmに切り替え中…');
+      $('warn').textContent='高速モードで変換できなかったため、互換モードに切り替えました。';
+      setProgress(0,'互換モードに切り替えています…');
     }
   }
   const blob=await viaFFmpeg(f,o);
-  return{blob,engine:'ffmpeg.wasm'};
+  return{blob,engine:'<i class="fa-solid fa-gears"></i> 互換モード（ffmpeg）で変換しました'};
+}
+
+function showPreview(f){
+  const box=$('pvbox');
+  if(flvPlayer){try{flvPlayer.destroy()}catch(e){}flvPlayer=null}
+  box.innerHTML='';
+  if(f.g==='g'){
+    const img=document.createElement('img');
+    img.className='pv';img.src=outUrl;
+    box.appendChild(img);
+    return;
+  }
+  const el=document.createElement(f.g==='a'?'audio':'video');
+  el.controls=true;
+  el.playsInline=true;
+  const fail=()=>{
+    box.innerHTML='<p class="hint" style="text-align:center">このブラウザではプレビューできません。ダウンロードしたファイルは、対応するプレイヤー（VLCなど）で再生できます。</p>';
+  };
+  const viaFlv=async()=>{
+    el.onerror=null;
+    el.onloadedmetadata=null;
+    if(f.e!=='flv'){fail();return}
+    try{
+      await loadScript('https://cdn.jsdelivr.net/npm/flv.js@1.6.2/dist/flv.min.js');
+      if(!window.flvjs||!flvjs.isSupported()){fail();return}
+      el.removeAttribute('src');
+      flvPlayer=flvjs.createPlayer({type:'flv',url:outUrl});
+      flvPlayer.attachMediaElement(el);
+      flvPlayer.on(flvjs.Events.ERROR,fail);
+      flvPlayer.load();
+    }catch(e){
+      fail();
+    }
+  };
+  el.onerror=viaFlv;
+  el.onloadedmetadata=()=>{if(f.g==='v'&&el.videoWidth===0)viaFlv()};
+  el.src=outUrl;
+  box.appendChild(el);
 }
 
 $('go').onclick=async()=>{
   if(!file||busy)return;
-  busy=true;refresh();
+  setBusy(true);
   $('out').hidden=true;
+  $('prog').hidden=false;
   $('warn').textContent='';
-  const f=FORMATS[$('fmt').value];
+  $('err').textContent='';
+  setProgress(0,'準備しています…');
+  const f=fmt();
   const t0=performance.now();
   try{
     const{blob,engine}=await convert();
@@ -320,14 +607,29 @@ $('go').onclick=async()=>{
     outUrl=URL.createObjectURL(blob);
     $('dl').href=outUrl;
     $('dl').download=file.name.replace(/\.[^.]+$/,'')+'.'+f.e;
-    $('dl').textContent='ダウンロード（'+(blob.size/1048576).toFixed(1)+' MB）';
-    $('pvbox').innerHTML=f.k==='g'?`<img src="${outUrl}">`:f.k==='a'?`<audio controls src="${outUrl}"></audio>`:`<video controls playsinline src="${outUrl}"></video>`;
+    $('sumBefore').textContent=mb(file.size);
+    $('sumAfter').textContent=mb(blob.size);
+    $('sumTime').textContent=((performance.now()-t0)/1000).toFixed(1)+' 秒';
+    $('engine').innerHTML=engine;
+    showPreview(f);
+    setProgress(1,'完了');
     $('out').hidden=false;
-    setP(1,'完了（'+engine+'・'+((performance.now()-t0)/1000).toFixed(1)+' 秒）');
+    $('out').scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){
-    setP(0,'エラー：'+(err.message||err));
+    setProgress(0,'');
+    const warnIcon=document.createElement('i');
+    warnIcon.className='fa-solid fa-triangle-exclamation';
+    $('err').append(warnIcon,' '+(err.message||err)+'\n別の形式や設定で、もう一度お試しください。');
   }
-  busy=false;refresh();
+  setBusy(false);
+};
+
+$('again').onclick=()=>{
+  file=null;
+  $('drop').hidden=false;
+  $('chip').hidden=true;
+  ['s2','s3','s4','out'].forEach(id=>$(id).hidden=true);
+  window.scrollTo({top:0,behavior:'smooth'});
 };
 </script>
 </body>
